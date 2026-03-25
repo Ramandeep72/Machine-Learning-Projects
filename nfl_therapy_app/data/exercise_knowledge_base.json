@@ -1,0 +1,62 @@
+[
+  {
+    "id": "thoracic_mobility_open_books",
+    "name": "Open Books (Thoracic Rotation)",
+    "body_regions": ["upper_back", "shoulder"],
+    "tags": ["stiffness", "post_surgery", "mobility"],
+    "why": "Improves thoracic rotation and reduces compensatory stress on the shoulder and neck during overhead movement.",
+    "instructions": "Lie on your side with hips and knees bent. Reach top arm across body, then rotate open until chest faces opposite side. Repeat slowly.",
+    "dosage": "2-3 sets of 8 reps per side, daily.",
+    "contraindications": "Stop if it causes sharp shoulder or rib pain."
+  },
+  {
+    "id": "glute_bridge",
+    "name": "Glute Bridge",
+    "body_regions": ["low_back", "hip", "hamstring"],
+    "tags": ["pain", "weakness", "stability"],
+    "why": "Builds hip extension strength so the low back does less compensation under load.",
+    "instructions": "Lie on back, feet flat, brace core, squeeze glutes, and lift hips to form a straight line from shoulders to knees.",
+    "dosage": "3 sets of 10-15 reps, 3-4 times per week.",
+    "contraindications": "Avoid if symptoms radiate sharply down the leg."
+  },
+  {
+    "id": "copenhagen_plank_regression",
+    "name": "Copenhagen Side Plank (Regression)",
+    "body_regions": ["groin", "hip"],
+    "tags": ["groin_pain", "return_to_play", "stability"],
+    "why": "Targets adductor strength to improve cutting and change-of-direction tolerance.",
+    "instructions": "Support top knee on bench/chair, hold side plank with lower knee bent on floor.",
+    "dosage": "3 sets of 20-30 second holds per side, 2-3 times per week.",
+    "contraindications": "Modify if groin pain exceeds mild discomfort."
+  },
+  {
+    "id": "calf_raise_isometric",
+    "name": "Single-Leg Calf Raise Isometric",
+    "body_regions": ["ankle", "calf", "achilles"],
+    "tags": ["tendon", "pain", "loading"],
+    "why": "Isometric loading can reduce tendon pain sensitivity and rebuild force capacity.",
+    "instructions": "Stand on one foot with heel elevated and hold at mid-range.",
+    "dosage": "5 holds of 30-45 seconds, daily.",
+    "contraindications": "Reduce hold time if pain escalates over the next 24 hours."
+  },
+  {
+    "id": "split_squat_iso",
+    "name": "Split Squat Isometric",
+    "body_regions": ["knee", "quad", "hip"],
+    "tags": ["knee_pain", "post_surgery", "strength"],
+    "why": "Provides analgesic effect and restores tolerance in the patellar tendon and quadriceps.",
+    "instructions": "Hold bottom position of split squat with front knee over mid-foot.",
+    "dosage": "4-5 holds of 30-45 seconds, 3-4 times per week.",
+    "contraindications": "Avoid deep range if recent ligament reconstruction without clearance."
+  },
+  {
+    "id": "dead_bug_breathing",
+    "name": "Dead Bug with Breathing",
+    "body_regions": ["core", "low_back"],
+    "tags": ["stability", "coordination", "pain"],
+    "why": "Improves trunk control and reduces extension-based low-back irritation.",
+    "instructions": "Lie on back, arms up, hips and knees at 90 degrees. Exhale while extending opposite arm/leg without arching low back.",
+    "dosage": "2-3 sets of 6-8 reps per side, 4 times per week.",
+    "contraindications": "Keep range small if unable to maintain neutral spine."
+  }
+]
