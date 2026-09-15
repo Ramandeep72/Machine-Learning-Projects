@@ -1,11 +1,21 @@
-# Exploration Log — Ad-Hoc Sensitivity Analyses
+# Session Handoff — Electrode Porosity Feasibility Assessment
 
-This log covers work done in chat *after* the official notebook (`porosity_feasibility.ipynb`,
-Sections 1-18) was built and executed. None of it modified the official results — it's a record
-of follow-up questions and their honest answers, kept here so a new session doesn't have to
-re-derive it. Nothing here is in the protected `results/*.csv` files.
+Read this first in a new session to pick up full context without re-deriving anything.
 
-## Official notebook results (for reference)
+## What this is
+
+Data Scientist Candidate Assessment: can non-destructive sensor measurements (OES, electrical,
+thermal) predict battery-electrode porosity? Repo: `Ramandeep72/Machine-Learning-Projects`,
+branch `claude/ecstatic-archimedes-2tgf64` — **pushed to GitHub**, PR not yet created
+(offered, not requested as of this writing).
+
+- Official work: `porosity_feasibility/porosity_feasibility.ipynb` (89 cells, Sections 1-18,
+  executed clean, 0 errors, 15/15 + 9/9 acceptance checks pass) + `porosity_feasibility/results/`.
+- This file: everything tried *in chat, after* the notebook — ad-hoc, not in the protected
+  `results/*.csv` files, not re-executed as notebook cells (scripts lived in session scratchpad
+  and are gone; only results/verdicts below persist).
+
+## Official notebook results
 
 | scheme | model | MAE |
 |---|---|---|
@@ -16,26 +26,47 @@ re-derive it. Nothing here is in the protected `results/*.csv` files.
 | loo | ridge | 2.453 |
 | loo | pcr | 2.726 |
 
-**Conclusion in the notebook: inconclusive.** Neither ridge nor PCR consistently beats a constant
-baseline across both validation schemes. Data-quality audit (Section 18) found no record defects
-in any of the 20 samples; samples 0 and 14 (worst five-fold/ridge misses) show no data explanation
-for their difficulty.
+**Notebook conclusion: inconclusive.** Neither ridge nor PCR consistently beats baseline across
+both CV schemes. Data-quality audit (Section 18) found zero record defects in any of the 20
+samples. Samples 0 and 14 (worst five-fold/ridge misses) show no data explanation for their
+difficulty — investigated in depth, clean bill of health, still hard to predict.
 
-## Ad-hoc experiments tried, in order
+## Answers from Christina (the customer contact) — these resolve real assumptions
+
+1. **The 100 readings per sample are different physical locations on that sample** (not repeated
+   scans of one spot, not time-ordered). Locations themselves aren't meaningful. This **confirms
+   the notebook's mean-aggregation choice was correct** (bulk porosity ↔ average-over-locations
+   sensor signature), and legitimizes a feature idea not yet fully tested: within-sample spread
+   across the 100 readings = **spatial heterogeneity**, itself potentially predictive.
+2. **Assume samples were independently prepared.** Confirms the 5-fold/LOO CV design was valid
+   all along — this was the biggest unverified assumption (A1) in the notebook.
+3. **Customer wants ≤1% prediction error, and explainable models** — predictions must trace to
+   named physical features ("current waveform statistics," "a specific emission wavelength"), not
+   opaque features like raw pixel indices.
+   - Porosity is already in percentage-point-like units (range ~20-32), so **1% ≈ MAE of 1.0** in
+     the units used throughout. **Nothing tried, official or ad-hoc, gets within 2x of that** —
+     best case (see below) is ~2.14, worst is ~3.7.
+   - This **disqualifies the single best-performing model** (raw IR_pix/ridge, not explainable)
+     from being the actual deliverable, even though it's numerically the strongest result found.
+
+## Ad-hoc experiments, in order (chat only, not in the notebook)
 
 | # | What | Result | Verdict |
 |---|---|---|---|
-| 1 | Exclude samples 0/14, evaluation only (reuse existing OOF predictions) | Looked better | **Rejected** — circular, models still trained with 0/14 in most folds |
-| 2 | Exclude samples 0/14, true refit (fresh CV, n=18) | ridge/pcr ~1.85-1.92 MAE, clearly beat baseline (~2.7-3.0) | **Rejected** — user correctly called this cherry-picking; picks the two worst misses *after* seeing them |
-| 3 | Thickness alone | MAE 2.51-2.62, ~tied with/worse than baseline | Weak (r=0.284 with porosity) |
-| 4 | Thickness + all sensors (2,305 features) | Identical to sensors-only to 3 decimals | Thickness drowned out by feature-count imbalance |
-| 5 | Block-PCR: PCA per block, same k for all 4 blocks, k tuned via inner CV | five_fold 3.16 (worse), loo 2.38 (slightly better) | Inconsistent; k forced to ~1 by n=20 |
+| 1 | Exclude samples 0/14, evaluation only | Looked better | **Rejected** — circular, models still trained with 0/14 in most folds |
+| 2 | Exclude samples 0/14, true refit (n=18) | ridge/pcr ~1.85-1.92, clearly beat baseline | **Rejected** — cherry-picking, picks worst misses after seeing them (user's own call) |
+| 3 | Thickness alone | MAE 2.51-2.62, ~tied/worse than baseline | Weak (r=0.284 with porosity) |
+| 4 | Thickness + all sensors (2,305 feat.) | Identical to sensors-only to 3 decimals | Drowned out by feature-count imbalance |
+| 5 | Block-PCR: PCA per block, same k, tuned via inner CV | five_fold 3.16 (worse), loo 2.38 (slightly better) | Inconsistent; k forced to ~1 by n=20 |
 | 6 | Each sensor block alone, ridge + PCR | See table below | **IR_pix/ridge is the standout** |
-| 7 | OES peak-based features (8 peaks, target-independent selection from mean spectrum) | five_fold ridge 2.63/pcr 2.88 (worse), loo ridge 2.53/pcr 2.55 (~tied) | Disappointing given OES's visible physical structure |
-| 8 | Adaptive Block-PCR: per-block k in {0,1,2,3}, jointly tuned via inner CV | five_fold 3.31 (worse), loo 2.85 (worse) | **Clear failure** — search space too large for n=20, inner MAE (~1.7-2.4) didn't transfer to outer folds; same overfitting risk as manual cherry-picking, just automated |
-| 9 | Voltage/current descriptive plots (mean±std per sample) | Voltage averages ~0 (oscillates around zero); current has real per-sample structure | Motivated experiments 10-11 |
-| 10 | Voltage/current vs. assumed time index (V_t/I_t suffix as time — **unconfirmed assumption**, user's explicit choice) | Voltage: clean ~10-cycle sine wave, amplitude visibly tracks porosity. Current: same period, distorted/asymmetric (nonlinear response) | Suggested amplitude features |
-| 11 | Amplitude/level correlations with porosity (descriptive, n=20) | Voltage amplitude r=0.364; current amplitude r=0.195; **thermal mean level r=0.408; thermal amplitude r=0.401** | Strongest descriptive correlations found; consistent with #6's IR_pix result |
+| 7 | OES peak-based features (8 peaks, target-independent) | five_fold worse, loo ~tied | Disappointing given OES's visible structure |
+| 8 | Adaptive Block-PCR: per-block k∈{0,1,2,3}, jointly tuned | five_fold 3.31 (worse), loo 2.85 (worse) | **Clear failure** — search space too large for n=20; inner MAE (~1.7-2.4) didn't transfer out; same overfit risk as manual cherry-picking, automated |
+| 9 | Voltage/current descriptive plots (mean±std/sample) | Voltage ~0 (oscillates); current has real structure | Motivated #10-11 |
+| 10 | V/I vs. assumed time index (unconfirmed axis, user's explicit choice) | Voltage: clean ~10-cycle sine, amplitude tracks porosity. Current: same period, distorted (nonlinear response) | Suggested amplitude features |
+| 11 | Amplitude/level correlations with porosity (n=20) | Voltage amp r=0.364; current amp r=0.195; **thermal mean r=0.408; thermal amp r=0.401** | Strongest descriptive correlations found; consistent with #6 |
+| 12 | Pass 3: thermal mean+amp, voltage amp, **V-I phase lag + amplitude ratio** (FFT at dominant freq, freq chosen dataset-wide/target-independent) | Phase/ratio corr with porosity ~0 (r=0.098, -0.088) — hypothesis wrong. Combined 5-feature ridge/OLS: **worse than baseline both schemes** (2.60-2.86 vs 2.45-2.50) | **Failed** — physically-motivated impedance hypothesis didn't hold; weak features diluted the decent ones |
+| 13 | Mixed resolution: full OES (256) + full IR_pix (1024) + 4 V/I summary feats = 1284 total | Worse than baseline in 3/4 model×scheme combos; underperforms plain IR_pix-alone in all 4 | **Failed** — confirms combining blocks (even "good" ones at full res) dilutes IR_pix's solo signal; pattern held 3 separate ways now (block-PCA, adaptive block-PCA, this) |
+| 14 | Stability selection (Lasso over 200 subsamples/fold, keep features selected ≥50%) + SHAP, restricted to **explainable** candidates only (256 OES bins + 10 engineered incl. new spatial-heterogeneity feats from Christina's answer) | Collapsed to **1 feature** in 23/25 folds (usually a single OES wavelength, 392nm most often at 44%). MAE **3.6-3.7 — worst result of the entire session**, clearly worse than baseline | **Failed, and diagnostic:** LassoCV over-regularizes at n≈12-16 training rows, forcing extreme sparsity. Real contrast with #6: ridge (no sparsification, keeps+shrinks all 1024 IR_pix features) was the best performer. Suggests real signal here (if any) is **diffuse across many weak correlated features, not concentrated in a few strong ones** — directly conflicts with what sparse/explainable models assume, and with what the customer wants |
 
 ### Experiment 6 detail: each sensor block alone (ridge + PCR, full block, no engineering)
 
@@ -47,35 +78,52 @@ for their difficulty.
 | I_t | 512 | 2.77 (worse) | 3.55 (worse) | 2.66 (worse) | 2.76 (worse) |
 | IR_pix | 1024 | **2.14 (better)** | 3.06 (worse) | **2.40 (better)** | **2.16 (better)** |
 
-**IR_pix/ridge is the only configuration in this entire exploration that consistently beat
-baseline in both validation schemes**, and thermal summary stats (mean, amplitude) independently
-show the strongest descriptive correlations with porosity of anything tried. Two independent
-signals pointing the same direction.
+**IR_pix/ridge remains the single best-performing, most consistent result of the entire session**
+— survived every attempt to combine it with something else (all made it worse: #8, #12, #13) —
+but per Christina's answer, it's **disqualified as a deliverable** because raw pixel indices
+aren't explainable and the pixel geometry isn't even confirmed.
 
-**Important caveat that applies to all of this:** ~10+ different feature-set/model combinations
-were tried across experiments 1-11. With n=20, some configuration looking good by chance is the
-statistically expected outcome, not proof of a real effect (multiple-comparisons risk). IR_pix is
-the most promising lead, not a confirmed result.
+**Standing caveat across all 14 experiments:** this many feature-set/model combinations tried on
+n=20 means some configuration looking good by chance is statistically expected, not proof of a
+real effect (multiple-comparisons risk). Nothing here should be reported as confirmed — including
+IR_pix — without new samples.
 
-## Where this was headed next (not yet run)
+## Where things actually stand
 
-**Proposed "Pass 3" (first thing since Pass 1/Pass 2 that would deserve official-pass status):**
-engineered features — thermal mean level, thermal amplitude, voltage amplitude (3 features total,
-down from 2,304) — run through the same CV rigor as Pass 1/2 (fold-fitted scaling, ridge + OLS,
-both schemes, same baselines). Rationale: targets the two blocks/statistics that showed real
-signal (experiments 6 and 11) instead of either the full raw feature set or a blind guess at
-engineering. Caveat to keep attached to any result: the 3 features were chosen because they
-correlated best out of several computed on this same 20-sample set — a good CV result here is a
-well-motivated hypothesis test, not independent confirmation. That would require new samples.
+**The core tension, unresolved:** the only model family that ever beat baseline consistently
+(ridge on many raw, weakly-correlated features, no sparsification) is exactly the kind of model
+the customer said they don't want. Every attempt at the kind of model they *do* want (few, named,
+explainable features) has underperformed baseline, including the most careful, properly-nested
+attempt (#14). This isn't a "try more things" gap — three independent methods (peaks, engineered
+summary stats, stability selection) all point the same direction.
+
+**Against the 1% (~MAE 1.0) target: nothing is close.** Best real number is 2.14 (disqualified);
+best explainable number is around 2.5-2.6 at best, i.e. ~2.5x too imprecise.
+
+## Sound next steps, roughly in priority order
+
+1. **Don't run a 15th feature-set variant** — the ad-hoc exploration has been thorough and the
+   negative pattern is consistent, not noisy. More searching on the same 20 points now more
+   resembles p-hacking than genuine investigation.
+2. **Write up the honest finding**: sensors show a real but diffuse signal (best captured by
+   dense linear models on raw high-dimensional blocks, esp. thermal), but no explainable,
+   low-dimensional feature set has reproduced that signal, and nothing is within reach of the
+   customer's 1% target regardless of approach.
+3. **What would actually move this forward**: more samples (n=20 is the fundamental ceiling on
+   every method tried), confirmed thermal image geometry (to make IR_pix's signal explainable
+   rather than just numerically strong), and possibly relaxing either the accuracy target or the
+   explainability requirement — because right now they may be in direct tension for this dataset.
+4. If asked to build any of the ad-hoc experiments into real notebook cells (matching how Sections
+   17-18 were added), that's a rebuild — the scripts lived in session scratchpad and don't persist.
+   Follow the same pattern: cell files in a `nb_cells/` dir, assembled + executed via
+   `nbformat`/`nbclient`, per the earlier build script's approach.
 
 ## Session housekeeping
 
-- GitHub push has been blocked all session (`403`, org hasn't reconnected the Claude GitHub App /
-  claude.ai GitHub connector). Several commits are queued locally on `claude/ecstatic-archimedes-2tgf64`,
-  not yet pushed (check `git log origin/claude/ecstatic-archimedes-2tgf64..HEAD` for the exact count).
-  Retry `git push -u origin claude/ecstatic-archimedes-2tgf64` once access is fixed.
-- All ad-hoc scripts referenced above live in this session's scratchpad, not the repo — only this
-  log and the official notebook/results persist. If experiment 12 (Pass 3) should be built as
-  actual notebook cells (matching how the eval-visualization and data-quality sections were added),
-  that's a rebuild from scratch in the next session, following the same pattern as
-  `nb_cells/1*.py` / `2*.py` in this session's build script.
+- **GitHub push: resolved.** Was blocked all session (403 — Claude GitHub App had read access but
+  not write/Contents permission on this repo). Fixed by the user updating the app's installation
+  settings at https://github.com/apps/claude/installations/select_target. All commits are now
+  pushed to `claude/ecstatic-archimedes-2tgf64`. No PR opened yet.
+- requirements/environment: see `porosity_feasibility/README.md` (exact package versions, setup,
+  reproduce instructions). `shap==0.51.0` was installed ad-hoc for experiment 14 but is not in
+  `requirements.txt` (not part of the official notebook).
