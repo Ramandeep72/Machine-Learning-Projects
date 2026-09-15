@@ -1,6 +1,6 @@
 # Electrode Porosity Feasibility — Findings Report
 
-Generated 2026-09-15T05:17:15.842027+00:00 from `results/metrics_summary.csv` and
+Generated 2026-09-15T16:26:29.179156+00:00 from `results/metrics_summary.csv` and
 `results/oof_predictions.csv`. This is an initial feasibility check, not a
 production-readiness claim.
 
