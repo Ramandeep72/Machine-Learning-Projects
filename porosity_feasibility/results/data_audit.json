@@ -1,0 +1,116 @@
+{
+  "generated_at_utc": "2026-09-15T05:16:55.349520+00:00",
+  "resolved_data_dir": "/home/user/Machine-Learning-Projects/porosity_feasibility/data",
+  "files": {
+    "measurement": {
+      "name": "Measurement_Data.csv.gz",
+      "md5": "76454547f3d50edb707a3e899621e6fc"
+    },
+    "sample_info": {
+      "name": "Sample_Info.csv",
+      "md5": "acb0667cdf7c9aef5393b99dca584c86"
+    },
+    "oes_wavelengths": {
+      "name": "OES_Wavelengths.csv",
+      "md5": "7b6b11e0467c52806c1a104caff8f40b"
+    }
+  },
+  "raw_shapes": {
+    "measurement": [
+      2000,
+      2306
+    ],
+    "sample_info": [
+      20,
+      3
+    ],
+    "oes_wavelengths": [
+      256,
+      2
+    ]
+  },
+  "feature_block_counts": {
+    "OES_bin": 256,
+    "V_t": 512,
+    "I_t": 512,
+    "IR_pix": 1024
+  },
+  "total_feature_columns": 2304,
+  "n_samples_in_measurement_data": 20,
+  "n_samples_in_sample_info": 20,
+  "readings_per_sample": {
+    "min": 100,
+    "max": 100,
+    "unique_values": [
+      100
+    ]
+  },
+  "n_missing_sensor_values": 0,
+  "n_infinite_sensor_values_converted_to_missing": 0,
+  "checks": [
+    {
+      "name": "sample_info_one_row_per_id",
+      "passed": true,
+      "detail": "0 sample_id(s) with more than one Sample_Info row"
+    },
+    {
+      "name": "sample_info_porosity_finite",
+      "passed": true,
+      "detail": "0 of 20 porosity values are missing/non-finite"
+    },
+    {
+      "name": "sample_ids_cross_referenced",
+      "passed": true,
+      "detail": "unmatched measurement sample_ids (no reference row): []; unused reference sample_ids (no measurement rows): []"
+    },
+    {
+      "name": "sample_measurement_id_pairs_unique",
+      "passed": true,
+      "detail": "0 rows share a (sample_id, measurement_id) pair with another row"
+    },
+    {
+      "name": "full_row_duplicates_reported_only",
+      "passed": true,
+      "detail": "0 fully duplicate rows found (not removed)"
+    },
+    {
+      "name": "sensor_columns_numeric",
+      "passed": true,
+      "detail": "all sensor feature columns loaded as numeric dtype"
+    },
+    {
+      "name": "sensor_missing_value_count",
+      "passed": true,
+      "detail": "0 missing (NaN) sensor values out of 4608000 (0.0000%)"
+    },
+    {
+      "name": "sensor_infinite_value_count",
+      "passed": true,
+      "detail": "0 infinite sensor values found; these are converted to missing (NaN) as an explicit, logged decision before any imputation"
+    },
+    {
+      "name": "oes_wavelength_lookup_valid",
+      "passed": true,
+      "detail": "bin numbers unique: True; all wavelengths finite: True"
+    },
+    {
+      "name": "oes_bins_have_wavelength_mapping",
+      "passed": true,
+      "detail": "0 OES bins in the measurement data have no wavelength lookup entry"
+    },
+    {
+      "name": "excluded_columns_declared",
+      "passed": true,
+      "detail": "columns never entered into predictor matrix X: ['measurement_id', 'porosity', 'sample_id', 'thickness']"
+    }
+  ],
+  "n_checks_failed": 0,
+  "environment_versions": {
+    "python": "3.11.15",
+    "platform": "Linux-6.18.44-fc-v33-x86_64-with-glibc2.39",
+    "numpy": "2.4.6",
+    "pandas": "3.0.5",
+    "scikit-learn": "1.9.1",
+    "matplotlib": "3.11.2"
+  }
+}
