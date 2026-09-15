@@ -65,12 +65,20 @@ scenario, not a silent overwrite of the primary results.
 ## What executed
 
 Executed end-to-end in a clean kernel on **2026-09-15**, using
-`porosity-venv` (see exact package versions below). **0 of 51 cells raised
-an error.** All acceptance checks defined in the notebook's final section
-passed (15/15) — see `results/data_audit.json` (`n_checks_failed`) and the
-notebook's Section 16 output for the full list. Both the primary 5-fold
-scheme and the leave-one-out sensitivity check ran (`RUN_LEAVE_ONE_SAMPLE_OUT
-= True`).
+`porosity-venv` (see exact package versions below). **0 of 89 cells raised
+an error.** All acceptance checks defined in the notebook's Section 16
+(15/15) and Section 18.13 data-quality checklist (9/9) passed — see
+`results/data_audit.json` (`n_checks_failed`) for the former. Both the
+primary 5-fold scheme and the leave-one-out sensitivity check ran
+(`RUN_LEAVE_ONE_SAMPLE_OUT = True`).
+
+**Section 18** is a later, diagnostic-only addendum: a data-quality audit of
+all 20 samples plus a detailed investigation of samples 0 and 14 (the two
+hardest five-fold predictions). It does not change the model results — it
+hash-verifies, at the end of Section 18, that the original `results/*.csv` /
+`results/*.json` files are byte-identical to what they were before that
+section ran. No samples were removed, no aggregation or modeling choices
+were changed, and no new models were fit.
 
 ## Outputs
 
@@ -91,7 +99,15 @@ results/
   pcr_component_loadings.csv   # PCA loadings + component regression coefficients per fold (extra)
   assumptions_and_limitations.md
   findings_report.md           # short results narrative, generated from the CSVs above
-  figures/                     # the 9 customer-readable PNGs referenced in the notebook
+  figures/                     # customer-readable PNGs referenced in Sections 9, 13, and 17
+  data_quality/                # Section 18 diagnostic addendum (does not alter results above)
+    sample_quality_audit.csv         # per-sample record-integrity checks (duplicates, missingness, join, labels)
+    feature_within_sample_stats.csv  # per (sample, sensor feature) descriptive stats, 46,080 rows
+    training_fold_coverage.csv       # per held-out sample: was its porosity inside its training folds' range?
+    reference_provenance_status.csv  # what's known/unknown about the porosity reference measurement
+    sample_prediction_diagnostics.csv # primary 5-fold table joining the audit to predictions (obs_*/pred_*/err_*)
+    diagnostic_findings.md           # what the audit found, incl. the samples 0/14 investigation
+    figures/                         # 4 PNGs: overview, relative-spread, 2x OES profile (samples 0 & 14)
 ```
 
 ## Environment versions actually used
@@ -129,10 +145,14 @@ nbconvert==7.17.1
 ## AI assistance disclosure
 
 OpenAI ChatGPT assisted with developing the analysis plan and the
-implementation brief this notebook was built from. Claude Code assisted with
-implementing the notebook code (data loading/audit, aggregation, the ridge
-and PCR pipelines, the nested cross-validation engine, metrics and
-consistency checks, figures), and drafting `results/findings_report.md`,
-`results/assumptions_and_limitations.md`, and this README. The assumptions,
-methods, and conclusions require the candidate's own review and ownership
-before being presented to a customer.
+implementation briefs this notebook was built from (both the original
+modeling brief and the Section 18 data-quality addendum brief). Claude Code
+assisted with implementing the notebook code (data loading/audit,
+aggregation, the ridge and PCR pipelines, the nested cross-validation
+engine, metrics and consistency checks, the model-evaluation and
+data-quality figures, and Section 18's audit tables and sample 0/14
+investigation), and with drafting `results/findings_report.md`,
+`results/assumptions_and_limitations.md`, `results/data_quality/diagnostic_findings.md`,
+and this README. The assumptions, methods, and conclusions require the
+candidate's own review and ownership before being presented to a customer —
+that review has not yet happened.

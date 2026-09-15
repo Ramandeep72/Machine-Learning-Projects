@@ -1,0 +1,9 @@
+item,status
+Reference porosity measurement method,unknown / not assessable from supplied files
+Reference porosity units,"unknown / not assessable from supplied files (reported in provided units throughout, per A7)"
+Timing of reference measurement relative to sensor acquisition,unknown / not assessable from supplied files
+Same specimen/location vs. paired or adjacent material,unknown / not assessable from supplied files
+Reference-measurement repeats or uncertainty,unknown / not assessable from supplied files (single porosity value per sample_id)
+Shared parent material or batch relationships between samples,unknown / not assessable from supplied files
+"Instrument, calibration, and acquisition-condition metadata for OES/electrical/thermal sensors",unknown / not assessable from supplied files
+sample_id join between Measurement_Data and Sample_Info,no issue detected by this check (Section 18.4 / Section 6)
