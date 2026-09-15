@@ -71,8 +71,9 @@ well-motivated hypothesis test, not independent confirmation. That would require
 ## Session housekeeping
 
 - GitHub push has been blocked all session (`403`, org hasn't reconnected the Claude GitHub App /
-  claude.ai GitHub connector). 4 commits are queued locally on `claude/ecstatic-archimedes-2tgf64`,
-  not yet pushed. Retry `git push -u origin claude/ecstatic-archimedes-2tgf64` once access is fixed.
+  claude.ai GitHub connector). Several commits are queued locally on `claude/ecstatic-archimedes-2tgf64`,
+  not yet pushed (check `git log origin/claude/ecstatic-archimedes-2tgf64..HEAD` for the exact count).
+  Retry `git push -u origin claude/ecstatic-archimedes-2tgf64` once access is fixed.
 - All ad-hoc scripts referenced above live in this session's scratchpad, not the repo — only this
   log and the official notebook/results persist. If experiment 12 (Pass 3) should be built as
   actual notebook cells (matching how the eval-visualization and data-quality sections were added),
