@@ -18,11 +18,12 @@ core result; the exploratory notebook is supplementary.
 
 Of the three measurement types tested (OES, electrical, thermal), only **thermal
 imaging** shows a consistent, physically-plausible predictive relationship with
-porosity — reproducible across two independent validation schemes and backed by an
-independent descriptive correlation (not just the cross-validated model score).
-Best result: `IR_pix` / ridge, unstandardized, LOO — **MAE 2.02, MAPE 7.7%**, versus a
-baseline of MAE 2.50. See `porosity_pipeline.ipynb` Sections 5-6 and 9 for the full
-reasoning, and `REPORT.md` for the customer-facing framing.
+porosity. Three independent kinds of evidence agree: cross-validated predictive
+performance (Section 5), a model-free descriptive correlation (Section 6), and a
+physical mechanism grounded in known materials science (also Section 6). Best result:
+`IR_pix` / ridge, unstandardized, LOO — **MAE 2.02, MAPE 7.7%**, versus a baseline of
+MAE 2.50. See `porosity_pipeline.ipynb` Sections 5-6 and 9 for the full reasoning,
+Section 10 for assumptions and scope, and `REPORT.md` for the customer-facing framing.
 
 ## Environment / setup
 
@@ -32,11 +33,12 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Tested with Python 3.11, pandas 3.0, numpy 2.4, scikit-learn 1.9, plotly 6.x. No GPU or
-external services required; everything runs locally. Static PNG previews of the Plotly
-figures are pre-rendered via `kaleido` + a local Chromium install — if reproducing in an
-environment without a browser available, the notebook still runs and produces the
-interactive `.html` files; only the inline preview-image step may need adjusting.
+Tested with Python 3.11, pandas 3.0, numpy 2.4, scikit-learn 1.9, plotly 6.x, playwright
+(with a local Chromium install). Every figure is embedded directly in the notebook's own
+output as a PNG (rendered via a headless-browser screenshot of the interactive Plotly
+figure) — the notebook is self-contained and needs no companion image files to display
+correctly on GitHub or anywhere else. No GPU or external services required; everything
+runs locally.
 
 ## Data
 
@@ -67,9 +69,8 @@ or open `porosity_pipeline.ipynb` in Jupyter/JupyterLab and run all cells top to
 Runtime is a couple of minutes. A fixed `RANDOM_STATE = 42` makes the 5-fold CV splits
 and all model-internal searches reproducible run to run. Re-running regenerates
 `eda_measurements_by_sample.html`, `actual_vs_predicted.html`, and
-`thermal_correlation.html` (interactive) in place; the `*_preview.png` files are static
-snapshots of those same figures, included for viewers (like GitHub) that don't execute
-the interactive JS.
+`thermal_correlation.html` (standalone interactive versions of the same figures embedded
+in the notebook) in place.
 
 To reproduce the earlier, more exhaustive exploratory notebook instead:
 
@@ -80,13 +81,16 @@ jupyter nbconvert --to notebook --execute --inplace porosity_feasibility.ipynb
 ## Structure
 
 - `porosity_pipeline.ipynb` — **primary/submitted notebook.** EDA, baseline, test-by-test,
-  honest weighted combination, descriptive correlation, actual-vs-predicted, summary.
+  honest weighted combination, independent correlation + physical mechanism, actual-vs-
+  predicted, summary, and assumptions/scope. All figures are embedded directly in the
+  notebook's output — self-contained, nothing external required to view it correctly.
 - `porosity_feasibility.ipynb` — earlier, more exhaustive exploratory notebook (data
   quality audit, engineered features, deeper residual analysis). Supplementary.
 - `REPORT.md` — short customer-facing summary of the findings.
 - `eda_measurements_by_sample.html`, `actual_vs_predicted.html`, `thermal_correlation.html` —
   standalone interactive Plotly figures (open directly in a browser for hover/zoom/legend
-  isolate); `*_preview.png` are static snapshots of the same figures.
+  isolate) — the same figures embedded as static images in the notebook, kept here in
+  interactive form as a convenience.
 - `thickness_effect.html` — supplementary figure: effect of adding thickness as a
   predictor, referenced in `REPORT.md` but not part of the primary pipeline's stages.
 - `data/` — the raw input files described above.
