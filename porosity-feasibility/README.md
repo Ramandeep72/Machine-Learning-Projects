@@ -129,6 +129,14 @@ jupyter nbconvert --to notebook --execute --inplace porosity_feasibility.ipynb
   standalone interactive Plotly figures (open directly in a browser for hover/zoom/legend
   isolate) — the same figures embedded as static images in the notebooks, kept here in
   interactive form as a convenience.
+- `pixel_importance_dashboard.html` — a standalone, presentation-oriented dashboard built
+  from the same pixel-importance data as `pixel_importance.html`/`pixel_importance_grid.html`
+  above: headline stats, a full 32×32 heatmap of every pixel's importance with the top-20
+  outlined, a ranked bar chart with LOO-stability labels, and all 20 samples' actual
+  thermal images (shared color scale, sorted by porosity) with the important region
+  outlined on each. Same underlying numbers and caveats as the notebook sections it's
+  drawn from (Sections 7-10 of `porosity_explainability_attempt.ipynb`) — download and
+  open directly in a browser.
 - `thickness_effect.html` — supplementary figure: effect of adding thickness as a
   predictor, referenced in `REPORT.md` but not part of the primary pipeline's stages.
 - `data/` — the raw input files described above.
