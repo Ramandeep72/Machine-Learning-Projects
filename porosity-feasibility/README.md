@@ -5,9 +5,16 @@ spectroscopy, thermal imaging, voltage/current waveforms) predict electrode poro
 which is currently only measured offline?
 
 **Primary notebook (submitted pipeline):** [`porosity_pipeline.ipynb`](porosity_pipeline.ipynb) —
-four stages: EDA → baseline (all features + ridge) → test-by-test (each measurement type
-alone) → honest, leakage-free weighted combination of all four.
+EDA → baseline (all features + ridge) → test-by-test (each measurement type alone) →
+a refinement narrowing the winner down to its most important pixels → honest,
+leakage-free weighted combination of all four measurement types.
 Customer-facing summary: [`REPORT.md`](REPORT.md).
+
+**Companion notebook:** [`porosity_explainability_attempt.ipynb`](porosity_explainability_attempt.ipynb) —
+a direct, honest attempt to meet the customer's explainability requirement: named
+physical features tried and found short of the winning model's accuracy, plus an
+interpretation of what the winning model itself actually relies on (which pixels, how
+stable, whether they cluster spatially).
 
 A more exhaustive, earlier exploratory notebook — [`porosity_feasibility.ipynb`](porosity_feasibility.ipynb) —
 is also included for reference (data-quality audit, additional engineered features,
@@ -17,13 +24,20 @@ core result; the exploratory notebook is supplementary.
 ## Result, in one line
 
 Of the three measurement types tested (OES, electrical, thermal), only **thermal
-imaging** shows a consistent, physically-plausible predictive relationship with
-porosity. Three independent kinds of evidence agree: cross-validated predictive
-performance (Section 5), a model-free descriptive correlation (Section 6), and a
-physical mechanism grounded in known materials science (also Section 6). Best result:
-`IR_pix` / ridge, unstandardized, LOO — **MAE 2.02, MAPE 7.7%**, versus a baseline of
-MAE 2.50. See `porosity_pipeline.ipynb` Sections 5-6 and 9 for the full reasoning,
-Section 10 for assumptions and scope, and `REPORT.md` for the customer-facing framing.
+imaging** is the best-performing tested sensor representation, beating a naive baseline
+consistently where the others did not. Three complementary kinds of evidence agree (not
+statistically independent — the descriptive check draws on the same 20 samples as the
+model, per Section 6): cross-validated predictive performance (Section 5), a model-free
+descriptive correlation (Section 6), and a physical hypothesis consistent with known
+materials science, not an established mechanism (also Section 6). The full-pixel thermal
+reference model — `IR_pix` / ridge, unstandardized, LOO, all 1,024 pixels — achieved
+**MAE 2.02, MAPE 7.7%**, against a baseline of MAE 2.50. An exploratory sweep (Section 7)
+found that restricting to ~15-20 of its most important pixels scores somewhat lower (MAE
+~1.89-1.94, MAPE ~7.4-7.5%), but the specific pixel count was chosen after examining that
+sweep, so it is not an independently validated result — see `porosity_pipeline.ipynb`
+Sections 5-7 and 10 for the full reasoning, the "Customer clarifications, assumptions,
+and scope" section near the top of that notebook for assumptions and scope, and
+`REPORT.md` for the customer-facing framing.
 
 ## Environment / setup
 
@@ -33,12 +47,21 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Tested with Python 3.11, pandas 3.0, numpy 2.4, scikit-learn 1.9, plotly 6.x, playwright
-(with a local Chromium install). Every figure is embedded directly in the notebook's own
-output as a PNG (rendered via a headless-browser screenshot of the interactive Plotly
-figure) — the notebook is self-contained and needs no companion image files to display
-correctly on GitHub or anywhere else. No GPU or external services required; everything
-runs locally.
+Tested with Python 3.11, pandas 3.0, numpy 2.4, scikit-learn 1.9, plotly 6.x. All data
+loading, modeling, metric computation, and interactive-HTML figure generation run with
+just `requirements.txt` installed — no browser required for the analysis itself.
+
+**Optional:** each notebook also embeds a static PNG snapshot of every figure directly in
+its own cell output (rendered via a headless-browser screenshot of the interactive Plotly
+HTML), so the notebook displays correctly on GitHub without needing to open the
+companion `.html` files. This step needs Playwright with a Chromium browser installed
+(`pip install playwright && playwright install chromium`) and is skipped automatically,
+with a printed notice, if that isn't available — it never aborts the run. Pass
+`enable_screenshot=False` to `show_figure_as_image(...)` calls to skip it deliberately;
+the underlying interactive `.html` file is always written regardless. This was tested
+against a local Chromium install at a fixed path; set the `PLAYWRIGHT_CHROMIUM_PATH`
+environment variable if your Chromium binary lives elsewhere and isn't on Playwright's
+default resolution path. No GPU or external services required; everything runs locally.
 
 ## Data
 
@@ -72,6 +95,12 @@ and all model-internal searches reproducible run to run. Re-running regenerates
 `thermal_correlation.html` (standalone interactive versions of the same figures embedded
 in the notebook) in place.
 
+To reproduce the companion explainability notebook:
+
+```bash
+jupyter nbconvert --to notebook --execute --inplace porosity_explainability_attempt.ipynb
+```
+
 To reproduce the earlier, more exhaustive exploratory notebook instead:
 
 ```bash
@@ -80,16 +109,25 @@ jupyter nbconvert --to notebook --execute --inplace porosity_feasibility.ipynb
 
 ## Structure
 
-- `porosity_pipeline.ipynb` — **primary/submitted notebook.** EDA, baseline, test-by-test,
-  honest weighted combination, independent correlation + physical mechanism, actual-vs-
-  predicted, summary, and assumptions/scope. All figures are embedded directly in the
-  notebook's output — self-contained, nothing external required to view it correctly.
+- `porosity_pipeline.ipynb` — **primary/submitted notebook.** Customer clarifications and
+  assumptions (near the top), EDA, baseline, test-by-test, a pixel-restriction refinement
+  of the winning result, honest weighted combination, complementary correlation +
+  physical hypothesis, actual-vs-predicted, and summary. Figures embed as static PNGs in
+  the notebook's own output when Playwright/Chromium is available (optional — see
+  Environment/setup); interactive `.html` versions are always written regardless.
+- `porosity_explainability_attempt.ipynb` — **companion notebook.** Tests named,
+  physically-interpretable features (OES wavelengths, waveform statistics) against the
+  same rigor as the primary pipeline; none match the winning model's accuracy. Also
+  interprets the winning model directly — which pixels it relies on, their stability
+  across leave-one-out refits, whether they cluster spatially, and whether restricting to
+  them changes accuracy (feeding the refinement in the primary notebook's Section 7).
 - `porosity_feasibility.ipynb` — earlier, more exhaustive exploratory notebook (data
   quality audit, engineered features, deeper residual analysis). Supplementary.
 - `REPORT.md` — short customer-facing summary of the findings.
-- `eda_measurements_by_sample.html`, `actual_vs_predicted.html`, `thermal_correlation.html` —
+- `eda_measurements_by_sample.html`, `actual_vs_predicted.html`, `thermal_correlation.html`,
+  `pixel_importance.html`, `pixel_importance_grid.html` —
   standalone interactive Plotly figures (open directly in a browser for hover/zoom/legend
-  isolate) — the same figures embedded as static images in the notebook, kept here in
+  isolate) — the same figures embedded as static images in the notebooks, kept here in
   interactive form as a convenience.
 - `thickness_effect.html` — supplementary figure: effect of adding thickness as a
   predictor, referenced in `REPORT.md` but not part of the primary pipeline's stages.
