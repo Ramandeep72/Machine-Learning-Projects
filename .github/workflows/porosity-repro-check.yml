@@ -1,0 +1,135 @@
+name: Porosity clean-VM reproducibility check
+
+on:
+  push:
+    branches:
+      - repro/porosity-vm-check-20260917
+    paths:
+      - .github/workflows/porosity-repro-check.yml
+
+permissions:
+  contents: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - name: Check out the exact submission snapshot
+        uses: actions/checkout@v7
+        with:
+          ref: b6788313851c23c0f70b2039c1aac617d3895ef4
+          persist-credentials: false
+      - name: Set up Python matching the README
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Create clean virtual environment and install requirements
+        working-directory: porosity-feasibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p vm-check/logs vm-check/originals vm-check/executed
+          git rev-parse HEAD | tee vm-check/commit.txt
+          cp *.ipynb vm-check/originals/
+          python3 -m venv .venv
+          source .venv/bin/activate
+          python --version | tee vm-check/python-version.txt
+          pip install --no-cache-dir -r requirements.txt 2>&1 | tee vm-check/logs/install.log
+          python -m pip check 2>&1 | tee vm-check/logs/pip-check.log
+          python -m pip freeze > vm-check/requirements-resolved.txt
+          python -c "import sys; print(sys.executable); print(sys.prefix); print(sys.base_prefix)" | tee vm-check/interpreter.txt
+          jupyter kernelspec list | tee vm-check/kernelspecs.txt
+      - name: Execute all three original notebooks from beginning to end
+        working-directory: porosity-feasibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .venv/bin/activate
+          overall=0
+          for notebook in porosity_pipeline.ipynb porosity_explainability_attempt.ipynb porosity_feasibility.ipynb; do
+            echo "===== EXECUTING ${notebook} ====="
+            if jupyter nbconvert --to notebook --execute --inplace "$notebook" --ExecutePreprocessor.timeout=600 2>&1 | tee "vm-check/logs/${notebook%.ipynb}.log"; then
+              printf '%s\tPASS\n' "$notebook" | tee -a vm-check/notebook-status.tsv
+              cp "$notebook" "vm-check/executed/$notebook"
+            else
+              printf '%s\tFAIL\n' "$notebook" | tee -a vm-check/notebook-status.tsv
+              overall=1
+            fi
+          done
+          exit "$overall"
+      - name: Check unchanged source cells and report fresh results
+        if: always()
+        working-directory: porosity-feasibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .venv/bin/activate
+          python - <<'PY' 2>&1 | tee vm-check/logs/result-verification.log
+          import json, re
+          from pathlib import Path
+          root = Path('vm-check')
+          def text_of(cell):
+              parts = []
+              for output in cell.get('outputs', []):
+                  value = output.get('text', output.get('data', {}).get('text/plain', ''))
+                  parts.append(''.join(value) if isinstance(value, list) else value)
+              return '\n'.join(parts)
+          verification = []
+          for path in sorted((root / 'executed').glob('*.ipynb')):
+              fresh = json.loads(path.read_text())
+              old = json.loads((root / 'originals' / path.name).read_text())
+              fresh_code = [c for c in fresh['cells'] if c['cell_type'] == 'code']
+              old_code = [c for c in old['cells'] if c['cell_type'] == 'code']
+              assert [''.join(c['source']) for c in fresh_code] == [''.join(c['source']) for c in old_code], path.name + ': source changed'
+              assert all(c.get('execution_count') is not None for c in fresh_code), path.name + ': unexecuted code'
+              assert not any(o.get('output_type') == 'error' for c in fresh_code for o in c.get('outputs', [])), path.name + ': error output'
+              print('\n===== FRESH NOTEBOOK:', path.name, '=====')
+              print('Source unchanged; executed code cells:', len(fresh_code))
+              report = []
+              for cell in fresh['cells']:
+                  if cell['cell_type'] == 'markdown':
+                      heading = ''.join(cell['source']).split('\n')[0]
+                      if heading.startswith('#'):
+                          print(heading)
+                          report.append(heading)
+                  else:
+                      text = text_of(cell)
+                      if text:
+                          print('CELL', cell.get('id', ''), text)
+                          report.append('CELL ' + cell.get('id', '') + '\n' + text)
+              (root / (path.stem + '-fresh-outputs.txt')).write_text('\n\n'.join(report))
+              verification.append({'notebook': path.name, 'code_unchanged': True, 'executed_code_cells': len(fresh_code), 'error_outputs': 0})
+              if path.name == 'porosity_pipeline.ipynb':
+                  old_by_id = {c.get('id'): c for c in old['cells']}
+                  fresh_by_id = {c.get('id'): c for c in fresh['cells']}
+                  for cell_id in ['4874a145', 'f7096dd0', '40d52a1c']:
+                      old_text = text_of(old_by_id[cell_id])
+                      new_text = text_of(fresh_by_id[cell_id])
+                      pattern = r'(?<![A-Za-z_])[-+]?\d+\.\d+(?:[eE][-+]?\d+)?'
+                      old_nums = [float(v) for v in re.findall(pattern, old_text)]
+                      new_nums = [float(v) for v in re.findall(pattern, new_text)]
+                      assert len(old_nums) == len(new_nums), 'Different metric count: ' + cell_id
+                      assert all(abs(a-b) <= 0.001 for a,b in zip(old_nums,new_nums)), 'Metric mismatch: ' + cell_id
+                      print('STORED VS FRESH CORE METRIC MATCH:', cell_id, len(new_nums), 'numbers, tolerance 0.001')
+          (root / 'verification.json').write_text(json.dumps(verification, indent=2))
+          assert len(verification) == 3, 'Not all three notebooks executed successfully; see individual logs.'
+          print('\nALL THREE NOTEBOOKS EXECUTED; CODE UNCHANGED; CORE METRICS MATCH.')
+          PY
+      - name: Preserve logs, resolved versions and executed notebooks
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: porosity-clean-vm-results
+          path: |
+            porosity-feasibility/vm-check/
+            porosity-feasibility/figures/actual_vs_predicted.html
+            porosity-feasibility/figures/thermal_correlation.html
+            porosity-feasibility/figures/pixel_importance.html
+            porosity-feasibility/figures/pixel_importance_grid.html
+          retention-days: 7
+          if-no-files-found: warn
